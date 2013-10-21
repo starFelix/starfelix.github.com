@@ -4,7 +4,7 @@
   <title><![CDATA[Binary Of Felix]]></title>
   <link href="http://starFelix.github.io/atom.xml" rel="self"/>
   <link href="http://starFelix.github.io/"/>
-  <updated>2013-10-21T15:16:37+08:00</updated>
+  <updated>2013-10-21T15:18:58+08:00</updated>
   <id>http://starFelix.github.io/</id>
   <author>
     <name><![CDATA[Star Felix Jew]]></name>
@@ -12,5 +12,14 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[New Post]]></title>
+    <link href="http://starFelix.github.io/blog/2013/10/21/new-post/"/>
+    <updated>2013-10-21T15:18:00+08:00</updated>
+    <id>http://starFelix.github.io/blog/2013/10/21/new-post</id>
+    <content type="html"><![CDATA[
+]]></content>
+  </entry>
   
 </feed>
