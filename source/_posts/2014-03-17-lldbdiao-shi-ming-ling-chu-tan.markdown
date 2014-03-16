@@ -45,7 +45,7 @@ categories:
 * expr  
 
 可以在调试时动态执行指定表达式，并将结果打印出来。常用于在调试过程中修改变量的值。  
-![图四：expr截图](http://www.starfelix.com/images/lldb-p.png)  
+![图四：expr截图](http://www.starfelix.com/images/lldb-p1.png)  
 如图设置断点，然后运行程序。程序中断后输入下面的命令：
 
 	expr a=2
