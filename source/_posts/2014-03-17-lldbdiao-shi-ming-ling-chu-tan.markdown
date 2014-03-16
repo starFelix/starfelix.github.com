@@ -1,11 +1,10 @@
 ---
 layout: post
-title: "lldb调试命令初探"
+title: "LLDB调试命令初探"
 date: 2014-03-17 00:50
 comments: true
 categories: 
 ---
-#*LLDB*调试命令初探
 <img src="https://developer.apple.com/library/ios/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/art/lldb_in_xc5_command_window_2x.png" alt="../art/lldb_in_xc5_command_window_2x.png" width="562" height="183.5">  
 如果你在平时的开发中从未使用过调试器，那你恐怕不知道一个调试器的作用有多大。你可能只满足于通过`printf`或者`NSLog`输出信息用于调试。但你只要试着尝试在调试中开始使用调试器*LLDB*，你会马上感受到调试器给你带来的便利。  
 *LLDB*是*LLVM*下的调试器。Xcode从4.0开始编译器开始改用*LLVM*，相应的调试器也从*gdb*改为*LLDB*。而从 Xcode5.0开始所有工程也被自动设置为使用*LLDB*。下面本文从初学者的角度讲解在日常的开发中如何使用*LLDB*以及*LLDB*常用的命令。  
@@ -46,7 +45,7 @@ categories:
 * expr  
 
 可以在调试时动态执行指定表达式，并将结果打印出来。常用于在调试过程中修改变量的值。  
-![图四：expr截图]()  
+![图四：expr截图](~/image/lldb-p1.tiff)  
 如图设置断点，然后运行程序。程序中断后输入下面的命令：
 
 	expr a=2
