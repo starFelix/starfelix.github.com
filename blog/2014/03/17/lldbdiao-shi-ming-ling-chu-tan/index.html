@@ -1,0 +1,439 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>LLDB调试命令初探 - Binary Of Felix</title>
+  <meta name="author" content="Star Felix Jew">
+
+  
+  <meta name="description" content="如果你在平时的开发中从未使用过调试器，那你恐怕不知道一个调试器的作用有多大。你可能只满足于通过printf或者NSLog输出信息用于调试。但你只要试着尝试在调试中开始使用调试器LLDB，你会马上感受到调试器给你带来的便利。
+LLDB是LLVM下的调试器。Xcode从4. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://www.starfelix.com/blog/2014/03/17/lldbdiao-shi-ming-ling-chu-tan">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Binary Of Felix" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Binary Of Felix</a></h1>
+  
+    <h2>A Binary World Of Felix</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:www.starfelix.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">LLDB调试命令初探</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-17T00:50:00+08:00" pubdate data-updated="true">Mar 17<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><img src="https://developer.apple.com/library/ios/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/art/lldb_in_xc5_command_window_2x.png" alt="../art/lldb_in_xc5_command_window_2x.png" width="562" height="183.5"><br/>
+如果你在平时的开发中从未使用过调试器，那你恐怕不知道一个调试器的作用有多大。你可能只满足于通过<code>printf</code>或者<code>NSLog</code>输出信息用于调试。但你只要试着尝试在调试中开始使用调试器<em>LLDB</em>，你会马上感受到调试器给你带来的便利。<br/>
+<em>LLDB</em>是<em>LLVM</em>下的调试器。Xcode从4.0开始编译器开始改用<em>LLVM</em>，相应的调试器也从<em>gdb</em>改为<em>LLDB</em>。而从 Xcode5.0开始所有工程也被自动设置为使用<em>LLDB</em>。下面本文从初学者的角度讲解在日常的开发中如何使用<em>LLDB</em>以及<em>LLDB</em>常用的命令。</p>
+
+<h2>初识<em>LLDB</em></h2>
+
+<p>你可能从未使用过<em>LLDB</em>，那让我们先来热热身。
+在调试器中最常用到的命令是<code>p</code>（用于输出基本类型）或者<code>po</code>（用于输出 Objective-C 对象）。如下，你可以通过输入po 和 view 来输出 view 的信息:</p>
+
+<pre><code>po [self view]
+</code></pre>
+
+<p>随后调试器会输出这个 object 的 description。在这个例子中可能是这样的信息：</p>
+
+<pre><code>(UIView *) $1 = 0x0824c800 &lt;UITableView: 0x824c800; frame = (0 20; 768 1004); clipsToBounds = YES; autoresize = W+H; gestureRecognizers = &lt;NSArray: 0x74c3010&gt;; layer = &lt;CALayer: 0x74c2710&gt;; contentOffset: {0, 0}&gt;
+</code></pre>
+
+<p>什么？在什么地方可以输入这个命令？OK，首先，我们需要先设置一个断点。如下图所示，我在<code>viewDidLoad:</code>中设置了一个了一个断点：</p>
+
+<p><img src="http://www.cimgf.com/wp-content/uploads/2012/12/Screenshot-121212-1214-AM.png" alt="图二：断点图" /></p>
+
+<p>接下来运行程序，然后程序会停留在断点处，从下图你可以看到在什么地方输入<em>LLDB</em>命令：</p>
+
+<p><img src="http://www.cimgf.com/wp-content/uploads/2012/12/Screenshot-121212-1219-AM.png" alt="图三：输入命令位置" /></p>
+
+<p>你可能需要的是 view 下 subview 的数量。由于 subview 的数量是一个 int 类型的值，所以我们使用命令<code>p</code>：</p>
+
+<pre><code>p (int)[[[self view] subviews] count]
+</code></pre>
+
+<p>最后你看到的输出会是：</p>
+
+<pre><code>(int) $2 = 2
+</code></pre>
+
+<p>是不是很简单？<br/>
+细心的朋友可能会发现输出的信息中带有<code>$1</code>、<code>$2</code>的字样。实际上，我们每次查询的结果会保存在一些持续变量中($[0-9]+)，这样你可以在后面的查询中直接使用这些值。比如现在我接下来要重新取回<code>$1</code>的值：</p>
+
+<pre><code>(lldb) po $1
+(UIView *) $1 = 0x0824c800 &lt;UITableView: 0x824c800; frame = (0 20; 768 1004); clipsToBounds = YES; autoresize = W+H; gestureRecognizers = &lt;NSArray: 0x74c3010&gt;; layer = &lt;CALayer: 0x74c2710&gt;; contentOffset: {0, 0}&gt;
+</code></pre>
+
+<p>可以看到，我们依然可以取到之前[self view]的值。</p>
+
+<p><em>LLDB</em>命令还可以用在断点上，详细的使用可以参见<a href="http://my.oschina.net/notting/blog/115294">这个文章</a></p>
+
+<h2>常用命令</h2>
+
+<p>下面补充说明其它一些常用的命令：</p>
+
+<ul>
+<li>expr</li>
+</ul>
+
+
+<p>可以在调试时动态执行指定表达式，并将结果打印出来。常用于在调试过程中修改变量的值。<br/>
+<img src="http://www.starfelix.com/images/lldb-p.png" alt="图四：expr截图" /><br/>
+如图设置断点，然后运行程序。程序中断后输入下面的命令：</p>
+
+<pre><code>expr a=2
+</code></pre>
+
+<p>你会看到如下的输出：</p>
+
+<pre><code>(int) $0 = 2
+</code></pre>
+
+<p>继续运行程序，程序输出的信息是：</p>
+
+<pre><code>实际值：2
+</code></pre>
+
+<p>很明显可以看出，变量a的值被改变。
+除此之外，还可以使用这个命令新声明一个变量对象，如：</p>
+
+<pre><code>expr int $b=2
+p $b
+</code></pre>
+
+<p>下面的命令用于输出新声明对象的值。（注意，对象名前要加$）</p>
+
+<ul>
+<li>call</li>
+</ul>
+
+
+<p>call即是调用的意思。其实上述的po和p也有调用的功能。因此一般只在不需要显示输出，或是方法无返回值时使用call。
+和上面的命令一样，我们依然在<code>viewDidLoad:</code>里面设置断点，然后在程序中断的时候输入下面的命令：</p>
+
+<pre><code>call [self.view setBackgroundColor:[UIColor redColor]]
+</code></pre>
+
+<p>继续运行程序，看看view的背景颜色是不是变成红色的了！在调试的时候灵活运用call命令可以起到事半功倍的作用。</p>
+
+<ul>
+<li>bt</li>
+</ul>
+
+
+<p>打印调用堆栈，加all可打印所有thread的堆栈。不详细举例说明，感兴趣的朋友可以自己试试。</p>
+
+<ul>
+<li>image</li>
+</ul>
+
+
+<p>image 命令可用于寻址，有多个组合命令。比较实用的用法是用于寻找栈地址对应的代码位置。
+下面我写了一段代码</p>
+
+<pre><code>NSArray *arr=[[NSArray alloc] initWithObjects:@"1",@"2", nil];
+NSLog(@"%@",arr[2]);
+</code></pre>
+
+<p>这段代码有明显的错误，程序运行这段代码后会抛出下面的异常：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>*** Terminating app due to uncaught exception 'NSRangeException', reason: '*** -[__NSArrayI objectAtIndex:]: index 2 beyond bounds [0 .. 1]'
+</span><span class='line'>*** First throw call stack:
+</span><span class='line'>(
+</span><span class='line'>  0   CoreFoundation                      0x0000000101951495 __exceptionPreprocess + 165
+</span><span class='line'>  1   libobjc.A.dylib                     0x00000001016b099e objc_exception_throw + 43
+</span><span class='line'>  2   CoreFoundation                      0x0000000101909e3f -[__NSArrayI objectAtIndex:] + 175
+</span><span class='line'>  3   ControlStyleDemo                    0x0000000100004af8 -[RootViewController viewDidLoad] + 312
+</span><span class='line'>  4   UIKit                               0x000000010035359e -[UIViewController loadViewIfRequired] + 562
+</span><span class='line'>  5   UIKit                               0x0000000100353777 -[UIViewController view] + 29
+</span><span class='line'>  6   UIKit                               0x000000010029396b -[UIWindow addRootViewControllerViewIfPossible] + 58
+</span><span class='line'>  7   UIKit                               0x0000000100293c70 -[UIWindow _setHidden:forced:] + 282
+</span><span class='line'>  8   UIKit                               0x000000010029cffa -[UIWindow makeKeyAndVisible] + 51
+</span><span class='line'>  9   ControlStyleDemo                    0x00000001000045e0 -[AppDelegate application:didFinishLaunchingWithOptions:] + 672
+</span><span class='line'>  10  UIKit                               0x00000001002583d9 -[UIApplication _handleDelegateCallbacksWithOptions:isSuspended:restoreState:] + 264
+</span><span class='line'>  11  UIKit                               0x0000000100258be1 -[UIApplication _callInitializationDelegatesForURL:payload:suspended:] + 1605
+</span><span class='line'>  12  UIKit                               0x000000010025ca0c -[UIApplication _runWithURL:payload:launchOrientation:statusBarStyle:statusBarHidden:] + 660
+</span><span class='line'>  13  UIKit                               0x000000010026dd4c -[UIApplication handleEvent:withNewEvent:] + 3189
+</span><span class='line'>  14  UIKit                               0x000000010026e216 -[UIApplication sendEvent:] + 79
+</span><span class='line'>  15  UIKit                               0x000000010025e086 _UIApplicationHandleEvent + 578
+</span><span class='line'>  16  GraphicsServices                    0x0000000103aca71a _PurpleEventCallback + 762
+</span><span class='line'>  17  GraphicsServices                    0x0000000103aca1e1 PurpleEventCallback + 35
+</span><span class='line'>  18  CoreFoundation                      0x00000001018d3679 __CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE1_PERFORM_FUNCTION__ + 41
+</span><span class='line'>  19  CoreFoundation                      0x00000001018d344e __CFRunLoopDoSource1 + 478
+</span><span class='line'>  20  CoreFoundation                      0x00000001018fc903 __CFRunLoopRun + 1939
+</span><span class='line'>  21  CoreFoundation                      0x00000001018fbd83 CFRunLoopRunSpecific + 467
+</span><span class='line'>  22  UIKit                               0x000000010025c2e1 -[UIApplication _run] + 609
+</span><span class='line'>  23  UIKit                               0x000000010025de33 UIApplicationMain + 1010
+</span><span class='line'>  24  ControlStyleDemo                    0x0000000100006b73 main + 115
+</span><span class='line'>  25  libdyld.dylib                       0x0000000101fe95fd start + 1
+</span><span class='line'>  26  ???                                 0x0000000000000001 0x0 + 1
+</span><span class='line'>)
+</span><span class='line'>libc++abi.dylib: terminating with uncaught exception of type NSException</span></code></pre></td></tr></table></div></figure>
+
+
+<p>现在，我们怀疑出错的地址是0x0000000100004af8（可以根据执行文件名判断，或者最小的栈地址）。为了进一步精确定位，我们可以输入以下的命令：</p>
+
+<pre><code>image lookup --address 0x0000000100004af8
+</code></pre>
+
+<p>命令执行后返回：</p>
+
+<pre><code>Address: ControlStyleDemo[0x0000000100004af8] (ControlStyleDemo.__TEXT.__text + 13288)
+Summary: ControlStyleDemo`-[RootViewController viewDidLoad] + 312 at RootViewController.m:53
+</code></pre>
+
+<p>我们可以看到，出错的位置是<code>RootViewController.m</code>的第53行。</p>
+
+<hr />
+
+<p>更多的命令可以参见<a href="http://lldb.llvm.org/lldb-gdb.html">这个网址</a>。<br/>
+另外，facebook开源了他们扩展的<a href="https://github.com/facebook/chisel">LLDB命令库</a>，有兴趣的朋友也可以安装看看。</p>
+
+<h2>简称和别名</h2>
+
+<p>很多时候，<em>LLDB</em>完整的命令是很长的。比如前面所说的<code>image lookup --address</code>这个组合命令。为了方便日常的使用，提高效率，<em>LLDB</em>命令也提供通过简称的方式调用命令。还是这个命令，我们用简称就可以写为<code>im loo -a</code>，是不是简单多了。<br/>
+如果你是从gdb时代就开始使用调试器的，你会发现，有些命令如<code>p</code>、<code>call</code>等命令和<em>gdb</em>下是一致的。其实这些命令是<em>LLDB</em>一些命令的别名，比如<code>p</code>是<code>frame variable</code>的别名，<code>p view</code>实际上是<code>frame variable view</code>。除了系统自建的<em>LLDB</em>别名，你也可以自定义别名。比如下面这个命令</p>
+
+<pre><code>command alias ioa image lookup --address %1
+</code></pre>
+
+<p>是将我前面所介绍过的一个命令<code>image lookup --address</code>添加了一个<code>ioa</code>的别名。然后执行下面的命令：</p>
+
+<pre><code>(lldb) ioa 0x0000000100004af8
+  Address: ControlStyleDemo[0x0000000100004af8] (ControlStyleDemo.__TEXT.__text + 13288)
+  Summary: ControlStyleDemo`-[RootViewController viewDidLoad] + 312 at RootViewController.m:53
+</code></pre>
+
+<p>可以看到，我们得到了我们想要的结果，而命令却大大缩短。  <br/>
+这里我就不再详细展开，有兴趣的朋友可以查看<a href="http://lldb.llvm.org/tutorial.html">这个网址</a>。</p>
+
+<h2>常见问题</h2>
+
+<p>上面我们简单的学习了如何使用<em>LLDB</em>命令。但有时我们在使用这些<em>LLDB</em>命令的时候，依然可能会遇到一些问题。比如下面这个命令。</p>
+
+<pre><code>(lldb) p NSLog(@"%@",[self.view  viewWithTag:1001])
+error: 'NSLog' has unknown return type; cast the call to its declared return type
+error: 1 errors parsing expression
+</code></pre>
+
+<p>如果在使用<em>LLDB</em>命令中发现有 unknown type 的类似错误（多见于id类型，比如NSArray中某个值），那我们就必须显式声明类型。比如上面这个命令，我们得这么修改。</p>
+
+<pre><code>p (void)NSLog(@"%@",[self.view  viewWithTag:1001])
+</code></pre>
+
+<p>这样就能得到正确的结果了。</p>
+
+<h2>总结</h2>
+
+<p>通过上面一些简单的讲解，相信朋友们已经知道如何使用<em>LLDB</em>命令来提高自己的效率了。Enjoy it！</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Star Felix Jew</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-17T00:50:00+08:00" pubdate data-updated="true">Mar 17<span>th</span>, 2014</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/04/13/zheng-que-bian-xie-designated-initializerde-ji-ge-yuan-ze/" title="Next Post: 正确编写Designated Initializer的几个原则">正确编写Designated Initializer的几个原则 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  
+  <section>
+      <h1>Comments</h1>
+      <div id="comments" aria-live="polite"><!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+    var duoshuoQuery = {short_name:"starfelix"};
+	(function() {
+     var ds = document.createElement('script');
+     ds.type = 'text/javascript';ds.async = true;
+     ds.src = 'http://static.duoshuo.com/embed.js';
+     ds.charset = 'UTF-8';
+     (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+     })();
+	</script>
+<!-- Duoshuo Comment END --></div>
+  </section>
+  
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/zheng-que-bian-xie-designated-initializerde-ji-ge-yuan-ze/">正确编写Designated Initializer的几个原则</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/17/lldbdiao-shi-ming-ling-chu-tan/">LLDB调试命令初探</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Star Felix Jew -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
