@@ -140,8 +140,10 @@ libc++abi.dylib: terminating with uncaught exception of type NSException
       Summary: ControlStyleDemo`-[RootViewController viewDidLoad] + 312 at RootViewController.m:53
 可以看到，我们得到了我们想要的结果，而命令却大大缩短。    
 这里我就不再详细展开，有兴趣的朋友可以查看[这个网址](http://lldb.llvm.org/tutorial.html)。
-##常见问题
-上面我们简单的学习了如何使用*LLDB*命令。但有时我们在使用这些*LLDB*命令的时候，依然可能会遇到一些问题。比如下面这个命令。  
+##常见问题    
+上面我们简单的学习了如何使用*LLDB*命令。但有时我们在使用这些*LLDB*命令的时候，依然可能会遇到一些问题。
+###不明类型或者类型不匹配    
+比如下面这个命令。  
 
 	(lldb) p NSLog(@"%@",[self.view  viewWithTag:1001])
 	error: 'NSLog' has unknown return type; cast the call to its declared return type
@@ -150,5 +152,23 @@ libc++abi.dylib: terminating with uncaught exception of type NSException
 
 	p (void)NSLog(@"%@",[self.view  viewWithTag:1001])
 这样就能得到正确的结果了。
+另外，lldb是不支持宏的，需要我们自己替换。
+###找不到方法   
+常见于输出frame的时候。比如你可能会得到以下的错误信息：    
+
+```
+(lldb) po self.view.frame
+error: unsupported expression with unknown type
+error: unsupported expression with unknown type
+error: 2 errors parsing expression
+```
+这似乎是lldb的一个bug，无法通过点属性访问的方法打印framework里面的对象，但是自己在app里面定义的就可以。我们把上面的命令改动一下：   
+
+```
+(lldb) p (CGRect)[self.view frame]
+(CGRect) $0 = origin=(x=0, y=0) size=(width=320, height=480)
+```
+
+
 ##总结
 通过上面一些简单的讲解，相信朋友们已经知道如何使用*LLDB*命令来提高自己的效率了。Enjoy it！

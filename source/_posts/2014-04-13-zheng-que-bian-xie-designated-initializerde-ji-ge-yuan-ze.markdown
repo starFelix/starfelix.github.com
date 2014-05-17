@@ -363,6 +363,32 @@ Twitter团队的那片博客给出的看法是：
 {% endcodeblock %} 
 这样我们就可以保证无论是从什么数据源初始化，得出的结果都是正确的了。事实上，如果在工程中我们没有对UIView或UIViewController的子类对象有归档的需求的话，NSCoding的两个方法可以省去不写。   
 
+#小技巧    
+有时候我们可能会忘记这些需要注意的地方，幸运的是，Xcode为我们提供了一个很棒的编译警告。
+在合适的文件前面加入下面一段宏：   
+
+{% codeblock lang:objc %}
+#ifndef NS_DESIGNATED_INITIALIZER
+#if __has_attribute(objc_designated_initializer)
+#define NS_DESIGNATED_INITIALIZER __attribute((objc_designated_initializer))
+#else
+#define NS_DESIGNATED_INITIALIZER
+#endif
+#endif
+{% endcodeblock %} 
+
+然后在你需要标示为Designated Initializer的方法后面加上 NS_DESIGNATED_INITIALIZER。如下：    
+{% codeblock lang:objc %}
+//Designated Initializer
+- (instancetype)initWithFrame:(CGRect)frame andName:(NSString *)name NS_DESIGNATED_INITIALIZER;
+//Instance secondary initializer
+- (instancetype)initWithName:(NSString *)name __attribute((objc_designated_initializer));
+//Class secondary initializer
++ (instancetype)testInitViewWithName:(NSString *)name;
+{% endcodeblock %}   
+这样，当你没有按照规则的时候，会得到下面的警告：     
+![图一：没有调用默认初始化器警告](http://www.starfelix.com/images/design-warning.png) 
+
 #综述
 经过一番长篇大论:)，我们可以总结正确编写Designated Initializer的原则如下：   
 
