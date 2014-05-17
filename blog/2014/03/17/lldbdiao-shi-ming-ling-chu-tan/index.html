@@ -309,7 +309,11 @@ Summary: ControlStyleDemo`-[RootViewController viewDidLoad] + 312 at RootViewCon
 
 <h2>常见问题</h2>
 
-<p>上面我们简单的学习了如何使用<em>LLDB</em>命令。但有时我们在使用这些<em>LLDB</em>命令的时候，依然可能会遇到一些问题。比如下面这个命令。</p>
+<p>上面我们简单的学习了如何使用<em>LLDB</em>命令。但有时我们在使用这些<em>LLDB</em>命令的时候，依然可能会遇到一些问题。</p>
+
+<h3>不明类型或者类型不匹配</h3>
+
+<p>比如下面这个命令。</p>
 
 <pre><code>(lldb) p NSLog(@"%@",[self.view  viewWithTag:1001])
 error: 'NSLog' has unknown return type; cast the call to its declared return type
@@ -321,7 +325,30 @@ error: 1 errors parsing expression
 <pre><code>p (void)NSLog(@"%@",[self.view  viewWithTag:1001])
 </code></pre>
 
-<p>这样就能得到正确的结果了。</p>
+<p>这样就能得到正确的结果了。
+另外，lldb是不支持宏的，需要我们自己替换。</p>
+
+<h3>找不到方法</h3>
+
+<p>常见于输出frame的时候。比如你可能会得到以下的错误信息：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>(lldb) po self.view.frame
+</span><span class='line'>error: unsupported expression with unknown type
+</span><span class='line'>error: unsupported expression with unknown type
+</span><span class='line'>error: 2 errors parsing expression</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这似乎是lldb的一个bug，无法通过点属性访问的方法打印framework里面的对象，但是自己在app里面定义的就可以。我们把上面的命令改动一下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>(lldb) p (CGRect)[self.view frame]
+</span><span class='line'>(CGRect) $0 = origin=(x=0, y=0) size=(width=320, height=480)</span></code></pre></td></tr></table></div></figure>
+
 
 <h2>总结</h2>
 

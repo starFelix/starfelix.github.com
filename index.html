@@ -721,6 +721,48 @@
 
 <p>这样我们就可以保证无论是从什么数据源初始化，得出的结果都是正确的了。事实上，如果在工程中我们没有对UIView或UIViewController的子类对象有归档的需求的话，NSCoding的两个方法可以省去不写。</p>
 
+<h1>小技巧</h1>
+
+<p>有时候我们可能会忘记这些需要注意的地方，幸运的是，Xcode为我们提供了一个很棒的编译警告。
+在合适的文件前面加入下面一段宏：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#ifndef NS_DESIGNATED_INITIALIZER</span>
+</span><span class='line'><span class="cp">#if __has_attribute(objc_designated_initializer)</span>
+</span><span class='line'><span class="cp">#define NS_DESIGNATED_INITIALIZER __attribute((objc_designated_initializer))</span>
+</span><span class='line'><span class="cp">#else</span>
+</span><span class='line'><span class="cp">#define NS_DESIGNATED_INITIALIZER</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后在你需要标示为Designated Initializer的方法后面加上 NS_DESIGNATED_INITIALIZER。如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//Designated Initializer</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">initWithFrame:</span><span class="p">(</span><span class="n">CGRect</span><span class="p">)</span><span class="nv">frame</span> <span class="nf">andName:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span> <span class="n">NS_DESIGNATED_INITIALIZER</span><span class="p">;</span>
+</span><span class='line'><span class="c1">//Instance secondary initializer</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">initWithName:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span> <span class="n">__attribute</span><span class="p">((</span><span class="n">objc_designated_initializer</span><span class="p">));</span>
+</span><span class='line'><span class="c1">//Class secondary initializer</span>
+</span><span class='line'><span class="k">+</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">testInitViewWithName:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，当你没有按照规则的时候，会得到下面的警告：   <br/>
+<img src="http://www.starfelix.com/images/design-warning.png" alt="图一：没有调用默认初始化器警告" /></p>
+
 <h1>综述</h1>
 
 <p>经过一番长篇大论:)，我们可以总结正确编写Designated Initializer的原则如下：</p>
@@ -990,7 +1032,11 @@ Summary: ControlStyleDemo`-[RootViewController viewDidLoad] + 312 at RootViewCon
 
 <h2>常见问题</h2>
 
-<p>上面我们简单的学习了如何使用<em>LLDB</em>命令。但有时我们在使用这些<em>LLDB</em>命令的时候，依然可能会遇到一些问题。比如下面这个命令。</p>
+<p>上面我们简单的学习了如何使用<em>LLDB</em>命令。但有时我们在使用这些<em>LLDB</em>命令的时候，依然可能会遇到一些问题。</p>
+
+<h3>不明类型或者类型不匹配</h3>
+
+<p>比如下面这个命令。</p>
 
 <pre><code>(lldb) p NSLog(@"%@",[self.view  viewWithTag:1001])
 error: 'NSLog' has unknown return type; cast the call to its declared return type
@@ -1002,7 +1048,30 @@ error: 1 errors parsing expression
 <pre><code>p (void)NSLog(@"%@",[self.view  viewWithTag:1001])
 </code></pre>
 
-<p>这样就能得到正确的结果了。</p>
+<p>这样就能得到正确的结果了。
+另外，lldb是不支持宏的，需要我们自己替换。</p>
+
+<h3>找不到方法</h3>
+
+<p>常见于输出frame的时候。比如你可能会得到以下的错误信息：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>(lldb) po self.view.frame
+</span><span class='line'>error: unsupported expression with unknown type
+</span><span class='line'>error: unsupported expression with unknown type
+</span><span class='line'>error: 2 errors parsing expression</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这似乎是lldb的一个bug，无法通过点属性访问的方法打印framework里面的对象，但是自己在app里面定义的就可以。我们把上面的命令改动一下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>(lldb) p (CGRect)[self.view frame]
+</span><span class='line'>(CGRect) $0 = origin=(x=0, y=0) size=(width=320, height=480)</span></code></pre></td></tr></table></div></figure>
+
 
 <h2>总结</h2>
 
