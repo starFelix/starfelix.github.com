@@ -12,7 +12,6 @@ categories:
 #方法一：CATextLayer
 CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自己处理渲染行为的类库。我尝试的代码如下：    
 {% codeblock lang:objc %}  
-
     NSString *text=@"1.Hello Everyone!This is an article which introduce how to use NSAttributedString in iOS5.\n2.这段文字需要保持每行的缩进。为了实现这种效果，我们需要使用NSAttributedString.\n3.剩下的都是废话，凑字数用的。";
  
     CATextLayer *textLayer=[CATextLayer layer];
@@ -35,8 +34,7 @@ CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自
     [attStr addAttribute:(NSString *)kCTParagraphStyleAttributeName value:(__bridge id)paragraphStyle range:NSMakeRange(0, [text length])];
     CFRelease(paragraphStyle);
     textLayer.string=attStr;
-    [self.view.layer addSublayer:textLayer]; 
-  
+    [self.view.layer addSublayer:textLayer];
 {% endcodeblock %}
 
 部分代码的解释：   
@@ -54,7 +52,7 @@ CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自
 
 #方法二——第三方库TTTAttributedLabel
 最省事的办法现在行不通了，本着懒人的本性，考虑一下第三方库。[TTTAttributedLabel](https://github.com/mattt/TTTAttributedLabel)是大神Mattt写的一个用于显示富文本的库。具体使用详见Github的项目主页，我就不再赘述。我写的代码如下：
-```
+{% codeblock lang:objc %}  
     TTTAttributedLabel *label=[[TTTAttributedLabel alloc] initWithFrame:UIEdgeInsetsInsetRect(self.view.bounds, UIEdgeInsetsMake(50, 20, 50, 20))];
     label.numberOfLines=0;
     label.font=[UIFont systemFontOfSize:14];
@@ -76,12 +74,12 @@ CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自
         return string;
     }];
     [self.view addSubview:label];
-```
+{% endcodeblock %}
 运行后显示结果如同方法一，依然无效。T_T   
 #方法三——继承CATextLayer重写渲染方法
 前面两个方法都行不通，最后我只能上网再找啊找，终于被我找到新的方法。虽然这个方法略繁琐，但是总比不能用的强。
 首先我们需要新建一个继承于CATextLayer的类，然后重写他的渲染函数`drawInContext:`。（由于只是demo代码，所以我直接把字符串初始化的代码写到渲染函数里面了）    
-```
+{% codeblock lang:objc %}
 - (void)drawInContext:(CGContextRef)ctx{
     CGContextSetFillColorWithColor(ctx, [[UIColor darkTextColor] CGColor]);
     UIGraphicsPushContext(ctx);
@@ -106,14 +104,14 @@ CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自
     UIGraphicsPopContext();
     [super drawInContext:ctx];
 }  
-```
+{% endcodeblock %}
 参照方法一初始化，然后运行代码。
 What？运行中报错？
 ```
 -[__NSCFType lineBreakMode]: unrecognized selector sent to instance 0x8f1bc50
 ```
 这把我给苦恼的。继续上网找原因。原来是ios5以后不再使用C对象，而改使用OC对象来设置格式。我根据网上给出的信息，修改代码如下：    
-```
+{% codeblock lang:objc %}
 - (void)drawInContext:(CGContextRef)ctx{
     CGContextSetFillColorWithColor(ctx, [[UIColor darkTextColor] CGColor]);
     UIGraphicsPushContext(ctx);
@@ -147,7 +145,7 @@ What？运行中报错？
     UIGraphicsPopContext();
     [super drawInContext:ctx];
 }    
-```
+{% endcodeblock %}
 运行代码，运行没报错，运行结果如下：    
-![图一：示例格式](http://www.starfelix.com/images/attributedString_right.png) 
+![图一：示例格式](http://www.starfelix.com/images/attributedString_right.png)     
 这回终于是正确的了！    
