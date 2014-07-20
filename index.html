@@ -9,8 +9,7 @@
   <meta name="author" content="Star Felix Jew">
 
   
-  <meta name="description" content="Designated Initializer(指定初始化器)在Objective－C里面是很重要的概念，但是在日常开发中我们往往会忽视它的重要性，以至于我们写出的代码具有潜藏的Bug，且不易发现。保证良好的编写Designated Initializer的风格，可以让我们节约很多时间。
-前段时间@ &hellip;">
+  <meta name="description" content="前几日遇到一个产品需求，需要将一段文本按下面的格式显示。 我马上想到的是用NSAttributedString，但是项目又得支持iOS5，怎么办呢？为了解决这个问题我做了以下几种尝试。 方法一：CATextLayer CATextLayer是iOS提供的， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -64,6 +63,303 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/07/20/ru-he-zai-ios5yi-shang-de-xi-tong-du-shi-yong-nsattributedstring/">如何在ios5以上的系统都使用NSAttributedString</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-20T21:48:00+08:00" pubdate data-updated="true">Jul 20<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>前几日遇到一个产品需求，需要将一段文本按下面的格式显示。  <br/>
+<img src="http://www.starfelix.com/images/attributedString_right.png" alt="图一：示例格式" />   <br/>
+我马上想到的是用NSAttributedString，但是项目又得支持iOS5，怎么办呢？为了解决这个问题我做了以下几种尝试。</p>
+
+<h1>方法一：CATextLayer</h1>
+
+<p>CATextLayer是iOS提供的，可以直接使用NSAttributedString而不需要自己处理渲染行为的类库。我尝试的代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>
+</span><span class='line'>    <span class="n">NSString</span> <span class="o">*</span><span class="n">text</span><span class="o">=</span><span class="s">@&quot;1.Hello Everyone!This is an article which introduce how to use NSAttributedString in iOS5.</span><span class="se">\n</span><span class="s">2.这段文字需要保持每行的缩进。为了实现这种效果，我们需要使用NSAttributedString.</span><span class="se">\n</span><span class="s">3.剩下的都是废话，凑字数用的。&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CATextLayer</span> <span class="o">*</span><span class="n">textLayer</span><span class="o">=</span><span class="p">[</span><span class="n">CATextLayer</span> <span class="n">layer</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">textLayer</span><span class="p">.</span><span class="n">frame</span><span class="o">=</span><span class="n">UIEdgeInsetsInsetRect</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">view</span><span class="p">.</span><span class="n">bounds</span><span class="p">,</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">));</span>
+</span><span class='line'>    <span class="n">textLayer</span><span class="p">.</span><span class="n">contentsScale</span><span class="o">=</span><span class="p">[</span><span class="n">UIScreen</span> <span class="n">mainScreen</span><span class="p">].</span><span class="n">scale</span><span class="p">;</span>                                <span class="c1">//1.</span>
+</span><span class='line'>    <span class="n">textLayer</span><span class="p">.</span><span class="n">wrapped</span><span class="o">=</span><span class="n">YES</span><span class="p">;</span>                                                              <span class="c1">//2.</span>
+</span><span class='line'>    <span class="n">NSMutableAttributedString</span> <span class="o">*</span><span class="n">attStr</span><span class="o">=</span><span class="p">[[</span><span class="n">NSMutableAttributedString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithString:</span><span class="n">text</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSRange</span> <span class="n">range</span><span class="o">=</span><span class="p">[</span><span class="n">text</span> <span class="nl">rangeOfString:</span><span class="s">@&quot;字数&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCTForegroundColorAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)([</span><span class="n">UIColor</span> <span class="n">redColor</span><span class="p">].</span><span class="n">CGColor</span><span class="p">)</span> <span class="nl">range:</span><span class="n">range</span><span class="p">];</span>      <span class="c1">//3.</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCTFontAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)(</span><span class="n">CTFontCreateWithName</span><span class="p">((</span><span class="n">CFStringRef</span><span class="p">)</span><span class="s">@&quot;Helvetica&quot;</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">))</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">lineBreakMode</span><span class="o">=</span><span class="n">kCTLineBreakByWordWrapping</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">firstLineIndent</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">headIndent</span><span class="o">=</span><span class="p">[</span><span class="s">@&quot;1.&quot;</span> <span class="nl">sizeWithFont:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]].</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CTParagraphStyleSetting</span> <span class="n">paragraphStyles</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>                                          <span class="c1">//4.</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierLineBreakMode</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CTLineBreakMode</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">lineBreakMode</span><span class="p">},</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierFirstLineHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">firstLineIndent</span><span class="p">},</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">headIndent</span><span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>    <span class="n">CTParagraphStyleRef</span> <span class="n">paragraphStyle</span> <span class="o">=</span> <span class="n">CTParagraphStyleCreate</span><span class="p">(</span><span class="n">paragraphStyles</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>       <span class="c1">//5.</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">kCTParagraphStyleAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">paragraphStyle</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">paragraphStyle</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">textLayer</span><span class="p">.</span><span class="n">string</span><span class="o">=</span><span class="n">attStr</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">view</span><span class="p">.</span><span class="n">layer</span> <span class="nl">addSublayer:</span><span class="n">textLayer</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>部分代码的解释： <br/>
+1. 设置 CATextLayer 的显示精细度。retina屏为2，非retina屏为1.  <br/>
+2. 设置 CATextLayer 自动换行。  <br/>
+3. 设置NSAttributedString在指定的范围(range)中字体使用红色。kCTForegroundColorAttributeName表示前景色的key，在这里可以理解为设置字体颜色的Key。  <br/>
+4. CTParagraphStyleSetting 段落的格式。代码中设置了3个格式，分别表示为换行模式、首行缩进、每行缩进。  <br/>
+5. 根据CTParagraphStyleSetting生成CTParagraphStyleRef。</p>
+
+<p>记得把attStr赋给textLayer.string，应用我们的格式化字符串。运行代码后显示效果如下：  <br/>
+<img src="http://www.starfelix.com/images/attributedString_wrong.png" alt="图一：示例格式" />   <br/>
+很遗憾，显示不完全正确。虽然红色的部分显示正确了，但是缩进没有正确显示。我修改了一些参数，又上网找了一些资料。最后发现CATextLayer不支持段落的格式。。。</p>
+
+<blockquote><p>注：如果遇到使用CATextLayer显示的中文字体不正确，那可能是因为系统对中文字体默认使用了日文字体。你可以在中文显示范围内指定“STHeitiSC-Light”这样就可以显示正常了。</p></blockquote>
+
+<h1>方法二——第三方库TTTAttributedLabel</h1>
+
+<p>最省事的办法现在行不通了，本着懒人的本性，考虑一下第三方库。<a href="https://github.com/mattt/TTTAttributedLabel">TTTAttributedLabel</a>是大神Mattt写的一个用于显示富文本的库。具体使用详见Github的项目主页，我就不再赘述。我写的代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>
+</span><span class='line'>    <span class="n">TTTAttributedLabel</span> <span class="o">*</span><span class="n">label</span><span class="o">=</span><span class="p">[[</span><span class="n">TTTAttributedLabel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame:</span><span class="n">UIEdgeInsetsInsetRect</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">view</span><span class="p">.</span><span class="n">bounds</span><span class="p">,</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">))];</span>
+</span><span class='line'>    <span class="n">label</span><span class="p">.</span><span class="n">numberOfLines</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">label</span><span class="p">.</span><span class="n">font</span><span class="o">=</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">label</span><span class="p">.</span><span class="n">backgroundColor</span><span class="o">=</span><span class="p">[</span><span class="n">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">label</span> <span class="nl">setText:</span><span class="n">text</span> <span class="nl">afterInheritingLabelAttributesAndConfiguringWithBlock:</span><span class="o">^</span><span class="p">(</span><span class="n">NSMutableAttributedString</span> <span class="o">*</span><span class="n">string</span><span class="p">){</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">lineBreakMode</span><span class="o">=</span><span class="n">kCTLineBreakByWordWrapping</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">firstLineIndent</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">headIndent</span><span class="o">=</span><span class="p">[</span><span class="s">@&quot;1.&quot;</span> <span class="nl">sizeWithFont:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]].</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CTParagraphStyleSetting</span> <span class="n">paragraphStyles</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierLineBreakMode</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CTLineBreakMode</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">lineBreakMode</span><span class="p">},</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierFirstLineHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">firstLineIndent</span><span class="p">},</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">headIndent</span><span class="p">}</span>
+</span><span class='line'>        <span class="p">};</span>
+</span><span class='line'>        <span class="n">CTParagraphStyleRef</span> <span class="n">paragraphStyle</span> <span class="o">=</span> <span class="n">CTParagraphStyleCreate</span><span class="p">(</span><span class="n">paragraphStyles</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">string</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">kCTParagraphStyleAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">paragraphStyle</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>        <span class="n">CFRelease</span><span class="p">(</span><span class="n">paragraphStyle</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">NSRange</span> <span class="n">range</span><span class="o">=</span><span class="p">[</span><span class="n">text</span> <span class="nl">rangeOfString:</span><span class="s">@&quot;字数&quot;</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">string</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCTForegroundColorAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)([</span><span class="n">UIColor</span> <span class="n">redColor</span><span class="p">].</span><span class="n">CGColor</span><span class="p">)</span> <span class="nl">range:</span><span class="n">range</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">string</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview:</span><span class="n">label</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>运行后显示结果如同方法一，依然无效。T_T</p>
+
+<h1>方法三——继承CATextLayer重写渲染方法</h1>
+
+<p>前面两个方法都行不通，最后我只能上网再找啊找，终于被我找到新的方法。虽然这个方法略繁琐，但是总比不能用的强。
+首先我们需要新建一个继承于CATextLayer的类，然后重写他的渲染函数<code>drawInContext:</code>。（由于只是demo代码，所以我直接把字符串初始化的代码写到渲染函数里面了）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">drawInContext:</span><span class="p">(</span><span class="n">CGContextRef</span><span class="p">)</span><span class="nv">ctx</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGContextSetFillColorWithColor</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="p">[[</span><span class="n">UIColor</span> <span class="n">darkTextColor</span><span class="p">]</span> <span class="n">CGColor</span><span class="p">]);</span>
+</span><span class='line'>    <span class="n">UIGraphicsPushContext</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NSString</span> <span class="o">*</span><span class="n">text</span><span class="o">=</span><span class="s">@&quot;1.Hello Everyone!This is an article which introduce how to use NSAttributedString in iOS5.</span><span class="se">\n</span><span class="s">2.这段文字需要保持每行的缩进。为了实现这种效果，我们需要使用NSAttributedString.</span><span class="se">\n</span><span class="s">3.剩下的都是废话，凑字数用的。&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">NSMutableAttributedString</span> <span class="o">*</span><span class="n">attStr</span><span class="o">=</span><span class="p">[[</span><span class="n">NSMutableAttributedString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithString:</span><span class="n">text</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSRange</span> <span class="n">range</span><span class="o">=</span><span class="p">[</span><span class="n">text</span> <span class="nl">rangeOfString:</span><span class="s">@&quot;字数&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">kCTForegroundColorAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="kt">id</span><span class="p">)([</span><span class="n">UIColor</span> <span class="n">redColor</span><span class="p">].</span><span class="n">CGColor</span><span class="p">)</span> <span class="nl">range:</span><span class="n">range</span><span class="p">];</span>      <span class="c1">//3.</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCTFontAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)(</span><span class="n">CTFontCreateWithName</span><span class="p">((</span><span class="n">CFStringRef</span><span class="p">)</span><span class="s">@&quot;Helvetica&quot;</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">))</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>      <span class="c1">//3.</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">lineBreakMode</span><span class="o">=</span><span class="n">kCTLineBreakByWordWrapping</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">firstLineIndent</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">headIndent</span><span class="o">=</span><span class="p">[</span><span class="s">@&quot;1.&quot;</span> <span class="nl">sizeWithFont:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]].</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CTParagraphStyleSetting</span> <span class="n">paragraphStyles</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>                                          <span class="c1">//4.</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierLineBreakMode</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CTLineBreakMode</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">lineBreakMode</span><span class="p">},</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierFirstLineHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">firstLineIndent</span><span class="p">},</span>
+</span><span class='line'>        <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">headIndent</span><span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>    <span class="n">CTParagraphStyleRef</span> <span class="n">paragraphStyle</span> <span class="o">=</span> <span class="n">CTParagraphStyleCreate</span><span class="p">(</span><span class="n">paragraphStyles</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>       <span class="c1">//5.</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">kCTParagraphStyleAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">paragraphStyle</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">drawInRect:</span><span class="n">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">UIGraphicsPopContext</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="nl">drawInContext:</span><span class="n">ctx</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>参照方法一初始化，然后运行代码。
+What？运行中报错？</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>-[__NSCFType lineBreakMode]: unrecognized selector sent to instance 0x8f1bc50</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这把我给苦恼的。继续上网找原因。原来是ios5以后不再使用C对象，而改使用OC对象来设置格式。我根据网上给出的信息，修改代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">drawInContext:</span><span class="p">(</span><span class="n">CGContextRef</span><span class="p">)</span><span class="nv">ctx</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGContextSetFillColorWithColor</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="p">[[</span><span class="n">UIColor</span> <span class="n">darkTextColor</span><span class="p">]</span> <span class="n">CGColor</span><span class="p">]);</span>
+</span><span class='line'>    <span class="n">UIGraphicsPushContext</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NSString</span> <span class="o">*</span><span class="n">text</span><span class="o">=</span><span class="s">@&quot;1.Hello Everyone!This is an article which introduce how to use NSAttributedString in iOS5.</span><span class="se">\n</span><span class="s">2.这段文字需要保持每行的缩进。为了实现这种效果，我们需要使用NSAttributedString.</span><span class="se">\n</span><span class="s">3.剩下的都是废话，凑字数用的。&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">NSMutableAttributedString</span> <span class="o">*</span><span class="n">attStr</span><span class="o">=</span><span class="p">[[</span><span class="n">NSMutableAttributedString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithString:</span><span class="n">text</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSRange</span> <span class="n">range</span><span class="o">=</span><span class="p">[</span><span class="n">text</span> <span class="nl">rangeOfString:</span><span class="s">@&quot;字数&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">NSParagraphStyle</span> <span class="n">class</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="n">NSForegroundColorAttributeName</span> <span class="nl">value:</span><span class="p">[</span><span class="n">UIColor</span> <span class="n">redColor</span><span class="p">]</span> <span class="nl">range:</span><span class="n">range</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="n">NSFontAttributeName</span> <span class="nl">value:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>        <span class="n">NSMutableParagraphStyle</span> <span class="o">*</span><span class="n">paragraphStyle</span><span class="o">=</span><span class="p">[[</span><span class="n">NSMutableParagraphStyle</span> <span class="n">defaultParagraphStyle</span><span class="p">]</span> <span class="n">mutableCopy</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">paragraphStyle</span><span class="p">.</span><span class="n">firstLineHeadIndent</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">paragraphStyle</span><span class="p">.</span><span class="n">headIndent</span><span class="o">=</span><span class="p">[</span><span class="s">@&quot;1.&quot;</span> <span class="nl">sizeWithFont:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]].</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="n">NSParagraphStyleAttributeName</span> <span class="nl">value:</span><span class="n">paragraphStyle</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">kCTForegroundColorAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="kt">id</span><span class="p">)([</span><span class="n">UIColor</span> <span class="n">redColor</span><span class="p">].</span><span class="n">CGColor</span><span class="p">)</span> <span class="nl">range:</span><span class="n">range</span><span class="p">];</span>      <span class="c1">//3.</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCTFontAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)(</span><span class="n">CTFontCreateWithName</span><span class="p">((</span><span class="n">CFStringRef</span><span class="p">)</span><span class="s">@&quot;Helvetica&quot;</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">))</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>      <span class="c1">//3.</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">lineBreakMode</span><span class="o">=</span><span class="n">kCTLineBreakByWordWrapping</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">firstLineIndent</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CGFloat</span> <span class="n">headIndent</span><span class="o">=</span><span class="p">[</span><span class="s">@&quot;1.&quot;</span> <span class="nl">sizeWithFont:</span><span class="p">[</span><span class="n">UIFont</span> <span class="nl">systemFontOfSize:</span><span class="mi">14</span><span class="p">]].</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">CTParagraphStyleSetting</span> <span class="n">paragraphStyles</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>                                          <span class="c1">//4.</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierLineBreakMode</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CTLineBreakMode</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">lineBreakMode</span><span class="p">},</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierFirstLineHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">firstLineIndent</span><span class="p">},</span>
+</span><span class='line'>            <span class="p">{.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">kCTParagraphStyleSpecifierHeadIndent</span><span class="p">,</span> <span class="p">.</span><span class="n">valueSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">),</span> <span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">headIndent</span><span class="p">}</span>
+</span><span class='line'>        <span class="p">};</span>
+</span><span class='line'>        <span class="n">CTParagraphStyleRef</span> <span class="n">paragraphStyle</span> <span class="o">=</span> <span class="n">CTParagraphStyleCreate</span><span class="p">(</span><span class="n">paragraphStyles</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>       <span class="c1">//5.</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">attStr</span> <span class="nl">addAttribute:</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">kCTParagraphStyleAttributeName</span> <span class="nl">value:</span><span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">paragraphStyle</span> <span class="nl">range:</span><span class="n">NSMakeRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="n">text</span> <span class="n">length</span><span class="p">])];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">attStr</span> <span class="nl">drawInRect:</span><span class="n">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">UIGraphicsPopContext</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="nl">drawInContext:</span><span class="n">ctx</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>运行代码，运行没报错，运行结果如下：  <br/>
+<img src="http://www.starfelix.com/images/attributedString_right.png" alt="图一：示例格式" />   <br/>
+这回终于是正确的了！</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1094,6 +1390,10 @@ error: 1 errors parsing expression
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/07/20/ru-he-zai-ios5yi-shang-de-xi-tong-du-shi-yong-nsattributedstring/">如何在ios5以上的系统都使用NSAttributedString</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/04/13/zheng-que-bian-xie-designated-initializerde-ji-ge-yuan-ze/">正确编写Designated Initializer的几个原则</a>
