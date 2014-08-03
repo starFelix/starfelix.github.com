@@ -4,7 +4,7 @@
   <title><![CDATA[Binary Of Felix]]></title>
   <link href="http://www.starfelix.com/atom.xml" rel="self"/>
   <link href="http://www.starfelix.com/"/>
-  <updated>2014-07-21T00:44:06+08:00</updated>
+  <updated>2014-08-03T21:58:03+08:00</updated>
   <id>http://www.starfelix.com/</id>
   <author>
     <name><![CDATA[Star Felix Jew]]></name>
@@ -12,6 +12,15 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[使用AutoMator添加服务]]></title>
+    <link href="http://www.starfelix.com/blog/2014/08/03/shi-yong-automatortian-jia-fu-wu/"/>
+    <updated>2014-08-03T21:57:00+08:00</updated>
+    <id>http://www.starfelix.com/blog/2014/08/03/shi-yong-automatortian-jia-fu-wu</id>
+    <content type="html"><![CDATA[
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[如何在ios5以上的系统都使用NSAttributedString]]></title>
