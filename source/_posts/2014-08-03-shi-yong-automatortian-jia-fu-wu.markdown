@@ -1,0 +1,50 @@
+---
+layout: post
+title: "使用AutoMator添加服务"
+date: 2014-08-03 21:57
+comments: true
+categories: 
+---
+
+前些天看到一篇讲[增强xcode开发效率的文章](http://www.raywenderlich.com/72021/supercharging-xcode-efficiency)，文末提到Automator的妙用。虽然自己以前也简单折腾过Automator，但没有真正认识到应该如何使用Automator。这些天捣鼓一番后，跟大家分享一下我的收获，同时也希望能起到抛砖引玉的作用，各位也能分享一下你们的心得。    
+
+#什么是AutoMator Workflow
+在日常开发或者使用mac的时候，我们难免会做一些重复性的工作。但是利用 Automator Workflow 就可以快速、高效、毫不费力的完成你所有费时、重复性的手动任务。只要拖动项目，用鼠标点击就可以轻松的创建自定义的 Workflow。还可以使用你的 Automator Workflow 执行一次或多次任务——甚至可以与朋友共享 Workflow。
+你可以轻松的自动处理很多工作，诸如给大量文件重命名，也可以运行事先编写好的脚本。    
+#AutoMator的类型
+AutoMator常用的类型有三种WorkFlow(工作流程)、Application(应用程序)、Service(服务).工作流程相当于是一个AutoMator文档，只能在Automator内部运行；应用程序是自运行的工作流程，拖到应用程序上的任何文件或文件夹均将作为该工作流程的输入；服务是可在整个 OS X 使用的关联工作流程，它们从当前应用程序或 Finder 接收文本或文件，服务会出现在“服务”菜单中。由于服务类型的Automator在使用上最为简便，所以以下均以服务类型的Automatore做例子。    
+#AutoMator的界面   
+![界面](http://www.starfelix.com/images/automator-screen.png)      
+1. 可选择的动作列表/变量。
+2. 每个动作/变量的介绍。
+3. 工作流区域，一系列的动作在这里组织。
+4. 某个具体的动作的选项界面。
+5. 输入输出标记，有这个标记的时候表明上一个动作的输出会作为下一个动作的输入。
+6. Debug工具栏，调试work flow的时候使用
+7. 日志，Debug的时候会输出每一个动作的执行情况。
+
+#例子一：设置图片为retina资源
+作为一个iOS开发者，在图片命名中加上@2x表示其为高清图片是很常见的动作。我们可能会使用应用、脚本等手段来实现这个机械性动作。但是使用AutoMator，我们可以直接在Finder中选中文件，然后右键给其加上@2x。
+![界面](http://www.starfelix.com/images/automator-eg.gif)    
+1. 新建一个服务类型的AutoMator
+2. 修改获取的内容为文件或文件夹，应用为Finder
+3. 添加“获取文件夹内容”的动作，这样我们的操作就可以对文件夹下的所有文件生效
+4. 添加“过滤Finder项目”，因为我们只想对图片文件进行操作，而且我们不想重复添加@2x
+5. 添加“给Finder项目重命名”，选择添加文本，给名称后面加上@2x。
+![界面](http://www.starfelix.com/images/automator-eg1.gif)    
+OK，大功告成。保存为“设置为retina图片”。现在在Finder随便选择一个图片，右键选择服务->设置为retina图片，可以看到文件名被自动添加上@2x。
+
+#例子二：在Finder打开
+公司的项目中，图片资源都是用脚本的方式拷贝到设备上，在工程里面看不到，以至于每次在Finder中寻找图片文件都比较麻烦。现在用AutoMator就简单多了。
+
+1. 新建一个服务类型的AutoMator
+2. 修改应用为Xcode
+3. 添加“运行shell脚本”，在右上角的“传递输入”改为“作为自变量”。这样在我们的脚本中就可以使用“$@”代表输入内容。然后脚本内容输入“basename $@ .png”(去掉后缀)。
+4. 再次添加“运行shell脚本”，同样设置为“作为自变量”。脚本内容输入“mdfind -name $@”(用Spotlight搜索)
+5. 添加“显示Finder项目”，这样工作流运行结束的时候就会自动打开Finder了。
+
+保存后，打开Xcode，在代码中随意选中一个文件名（比如"logo.png"），然后右键选择“在Finder打开”(如果没有找到，就找服务里面)。然后你就可以看到相应的文件在Finder中打开了。
+
+#调试
+有时候我们写出来的工作流不是马上就能工作的，这个时候就需要调试。在Debug面板点击“步骤”按钮就自动开始逐步调试，日志面板会输出每一步执行的信息。需要注意的是，像之前我们添加的Automator都是服务类型，那么调试的时候我们需要使用“获得指定的文本”之类的工作来代替输入源。
+![界面](http://www.starfelix.com/images/automator-debug.png)
