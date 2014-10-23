@@ -4,7 +4,7 @@
   <title><![CDATA[Binary Of Felix]]></title>
   <link href="http://www.starfelix.com/atom.xml" rel="self"/>
   <link href="http://www.starfelix.com/"/>
-  <updated>2014-10-24T01:22:04+08:00</updated>
+  <updated>2014-10-24T01:24:10+08:00</updated>
   <id>http://www.starfelix.com/</id>
   <author>
     <name><![CDATA[Star Felix Jew]]></name>
@@ -172,7 +172,7 @@
 
 <h1>结论</h1>
 
-<p>1.block的持有方式必须保证是copy，这样block中capture的对象才会被retain，保证block在执行的时候capture对象不会被提前释放。
+<p>1.block的持有方式必须保证是copy，这样block中capture的对象才会被retain，保证block在执行的时候capture对象不会被提前释放。<br/>
 2.为了避免引用循环，被copy的block必须保证在某个时刻被释放，以破坏引用循环。使得所有对象能被正常的释放。</p>
 ]]></content>
   </entry>
