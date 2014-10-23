@@ -95,5 +95,5 @@ self.completion = ^(NSArray* users) {
 系统SDK向我们展示的是一种更友好使用block的方式，让调用者不需要担心内存引用循环也不会有访问野指针的风险。
 
 #结论  
-1.block的持有方式必须保证是copy，这样block中capture的对象才会被retain，保证block在执行的时候capture对象不会被提前释放。
+1.block的持有方式必须保证是copy，这样block中capture的对象才会被retain，保证block在执行的时候capture对象不会被提前释放。  
 2.为了避免引用循环，被copy的block必须保证在某个时刻被释放，以破坏引用循环。使得所有对象能被正常的释放。
