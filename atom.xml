@@ -4,7 +4,7 @@
   <title><![CDATA[Binary Of Felix]]></title>
   <link href="http://www.starfelix.com/atom.xml" rel="self"/>
   <link href="http://www.starfelix.com/"/>
-  <updated>2014-08-03T22:07:48+08:00</updated>
+  <updated>2014-10-19T17:17:22+08:00</updated>
   <id>http://www.starfelix.com/</id>
   <author>
     <name><![CDATA[Star Felix Jew]]></name>
@@ -12,6 +12,15 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[如何更安全的使用Block]]></title>
+    <link href="http://www.starfelix.com/blog/2014/10/19/ru-he-geng-an-quan-de-shi-yong-block/"/>
+    <updated>2014-10-19T17:16:00+08:00</updated>
+    <id>http://www.starfelix.com/blog/2014/10/19/ru-he-geng-an-quan-de-shi-yong-block</id>
+    <content type="html"><![CDATA[
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[使用AutoMator添加服务]]></title>
