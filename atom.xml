@@ -4,7 +4,7 @@
   <title><![CDATA[Binary Of Felix]]></title>
   <link href="http://www.starfelix.com/atom.xml" rel="self"/>
   <link href="http://www.starfelix.com/"/>
-  <updated>2014-10-19T17:17:22+08:00</updated>
+  <updated>2014-10-24T01:22:04+08:00</updated>
   <id>http://www.starfelix.com/</id>
   <author>
     <name><![CDATA[Star Felix Jew]]></name>
@@ -18,7 +18,162 @@
     <link href="http://www.starfelix.com/blog/2014/10/19/ru-he-geng-an-quan-de-shi-yong-block/"/>
     <updated>2014-10-19T17:16:00+08:00</updated>
     <id>http://www.starfelix.com/blog/2014/10/19/ru-he-geng-an-quan-de-shi-yong-block</id>
-    <content type="html"><![CDATA[
+    <content type="html"><![CDATA[<p>前段时间，在公司的项目中发现了内存泄露。查到最后发现是由于没有正确使用Block导致的内存引用循环。简单的解决方案就是补上关键字<code>__weak</code>。那么问题来了，为何[UIView animateWithDuration:animations:completion:]或者GCD中可以不需要声明__weak呢？  <br/>
+<img src="http://www.starfelix.com/images/crazy.png" alt="导语" /></p>
+
+<h1>如何选择回调方式</h1>
+
+<p>在讲这个问题之前，我们先看看Objcio上是怎么判断使用何种回调方式：
+<img src="http://img.objccn.io/issue-7/communication-patterns-flow-chart.png" alt="选择" />  <br/>
+从这张图可以看到选择block的回掉方式的前提条件是sender能保证将callback被设为nil。定这个条件的目的是为了避免内存泄露。为何这样可以避免内存泄露呢？我们先看看通常我们是如何解决由使用block引入的内存引用循环问题。</p>
+
+<h1>引用循环</h1>
+
+<p>下面是一个内存引用循环的例子</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="nf">void</span><span class="p">(</span><span class="o">^</span><span class="n">my_completion_block_t</span><span class="p">)(</span><span class="n">NSArray</span><span class="o">*</span> <span class="n">result</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">UsersViewController</span> : <span class="nc">UIViewController</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">)</span> <span class="n">my_completion_block_t</span> <span class="n">completion</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">)</span> <span class="n">NSArray</span><span class="o">*</span> <span class="n">users</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里可以看到，<code>UsersViewController</code>持有一个block的强引用。如果一个不小心，我们会写出下面这样的代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">self</span><span class="p">.</span><span class="n">completion</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">NSArray</span><span class="o">*</span> <span class="n">users</span><span class="p">){</span>
+</span><span class='line'>    <span class="n">self</span><span class="p">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">users</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">self</span> <span class="n">fetchUsers</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>self持有了对completion的强引用，而completion的代码块内引用了self会引起对self的强引用，这便是一个经典的引用循环的案例。  <br/>
+在MRC下，<code>__block id x;</code>可以让block不强引用x。在ARC下，<code>__block id x;</code>默认的行为会强引用x。为了在ARC下解决这个问题，你可以使用<code>__unsafe_unretained __block id x;</code>。但是，这样做非常危险，因为当你的block里访问x时，x可能已经被释放了，变成野指针。你有两个更好的解决办法，一是换成使用<code>__weak</code>，二是在block内设置<code>__block</code>值为nil来打破引用循环。<br/>
+如下：<br/>
+1.使用__weak来表示对self的弱引用（代码里面不直接使用weakSelf的原因是为了在block里面保持对self的强引用，避免代码运行到一半self被释放）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">UsersViewController</span><span class="o">*</span> <span class="n">__weak</span> <span class="n">weakSelf</span> <span class="o">=</span> <span class="n">self</span><span class="p">;</span>
+</span><span class='line'><span class="n">self</span><span class="p">.</span><span class="n">completion</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">NSArray</span><span class="o">*</span> <span class="n">users</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">UsersViewController</span><span class="o">*</span> <span class="n">strongSelf</span> <span class="o">=</span> <span class="n">weakSelf</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">strongSelf</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">strongSelf</span><span class="p">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">users</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// the view controller does not exist anymore</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">usersViewController</span> <span class="n">fetchUsers</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>2.使用__block关键字修饰self，然后在block里设置为nil</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">UsersViewController</span><span class="o">*</span> <span class="n">__block</span> <span class="n">blockSelf</span> <span class="o">=</span> <span class="n">self</span><span class="p">;</span>
+</span><span class='line'><span class="n">self</span><span class="p">.</span><span class="n">completion</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">NSArray</span><span class="o">*</span> <span class="n">users</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">blockSelf</span><span class="p">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">users</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">blockSelf</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">usersViewController</span> <span class="n">fetchUsers</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>更友好的方式</h1>
+
+<p>这个时候我们的疑问来了，既然都可以解决内存循环引用的问题，为何还会有前面这个条件呢？
+原因就是这种方式严重依赖调用者的使用方式，在日常使用中带来严重的代码质量隐患。而在苹果的sdk中几个使用block的方法中调用者都不需要特别的处理。
+下面是一个测试代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSString</span> <span class="o">*</span><span class="n">temp</span><span class="o">=</span><span class="p">[[</span><span class="n">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat:</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span><span class="s">@&quot;我是temp&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%p&quot;</span><span class="p">,</span><span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">),</span> <span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span><span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">temp</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面代码的作用是进入一个controller后然后延时30s打印一个log，为了方便分析内存，我们使用的是mrc。使用Instructment分析内存如下： <br/>
+<img src="http://www.starfelix.com/images/memory1.png" alt="内存1" />
+从图片我们可以看到，temp是在30s后被释放。从Responsible Caller我们可以得出结论，block被持有，然后在30s触发执行后被释放。block中被capture的变量也被释放。如此也避免了内存问题。
+把代码修改一下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSString</span> <span class="o">*</span><span class="n">temp</span><span class="o">=</span><span class="p">[[</span><span class="n">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat:</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span><span class="s">@&quot;我是temp&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%p&quot;</span><span class="p">,</span><span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">__block</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">temp2</span><span class="o">=</span><span class="n">temp</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">),</span> <span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span><span class="n">temp2</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">temp</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同样使用Instructment分析，结果等到NSLog代码执行的时候代码crash了，内存记录如下：<br/>
+<img src="http://www.starfelix.com/images/memory2.png" alt="内存2" /> <br/>
+这说明，如果我们滥用__block，可能会出现在block运行的时候，访问对象已经被释放，造成访问野指针错误。
+系统SDK向我们展示的是一种更友好使用block的方式，让调用者不需要担心内存引用循环也不会有访问野指针的风险。</p>
+
+<h1>结论</h1>
+
+<p>1.block的持有方式必须保证是copy，这样block中capture的对象才会被retain，保证block在执行的时候capture对象不会被提前释放。
+2.为了避免引用循环，被copy的block必须保证在某个时刻被释放，以破坏引用循环。使得所有对象能被正常的释放。</p>
 ]]></content>
   </entry>
   
